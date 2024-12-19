@@ -1,4 +1,4 @@
-This is e-upTeX, Version 3.141592653-p4.1.1-u1.30-230214-2.6 (utf8.euc) (TeX Live 2024) (preloaded format=platex 2024.11.29)  6 DEC 2024 12:46
+This is e-upTeX, Version 3.141592653-p4.1.1-u1.30-230214-2.6 (utf8.euc) (TeX Live 2024) (preloaded format=platex 2024.11.29)  20 DEC 2024 03:27
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -201,7 +201,9 @@ LaTeX Font Info:    Font shape `JY1/gt/m/n' will be
 
 [4]
 
-[5] (./master-thesis.aux)
+[5]
+
+[6] (./master-thesis.aux)
  ***********
 pLaTeX2e <2023-02-14>+1, based on
 LaTeX2e <2024-11-01> patch level 1
@@ -215,6 +217,6 @@ Here is how much of TeX's memory you used:
  24605 multiletter control sequences out of 15000+600000
  570487 words of font info for 93 fonts, out of 8000000 for 9000
  934 hyphenation exceptions out of 8191
- 56i,14n,65p,209b,294s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 56i,14n,65p,209b,296s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on master-thesis.dvi (6 pages, 21012 bytes).
+Output written on master-thesis.dvi (7 pages, 26372 bytes).
