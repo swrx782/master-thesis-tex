@@ -22,8 +22,10 @@
 
 \usepackage{amsmath}
 
-
-
+\usepackage{amsthm}
+\newtheorem{thm}{定理}
+\newtheorem{definition}[thm]{定義}
+\newtheorem{example}[thm]{例}
 
 
 
@@ -213,19 +215,15 @@ CNF式$F$に対して充足可能(SAT)とはある割当$\nu$が存在して
 
 
 
+\begin{example}
+	$ (x_1 \lor x_2) \land (x_1 \lor \neg x_2) \land (\neg x_1 \lor \neg x_2) $はSATである。
+	これを充足する割当$\nu$の例としては$x_1=\top$, $x_2=\bot$が挙げられる。
+\end{example}
 
-\subsubsection{例}
-\begin{itemize}
-\item $(x_1 \lor x_2) \land (x_1 \lor \neg x_2) \land (\neg x_1 \lor \neg x_2)$
-	\begin{itemize}
-	\item $x_1=\top$, $x_2=\bot$とすると全体が真となるのでSATとなる。
-	\end{itemize}
-\item $(x_1 \lor x_2) \land (\neg x_1 \lor x_2) \land (x_1 \lor \neg x_2) \land (\neg x_1 \lor \neg x_2)$
-	\begin{itemize}
-	\item $x_1$, $x_2$に$\top$, $\bot$どちらを代入した場合でも全体は常に偽になるためUNSATとなる。
-	\end{itemize}
-\end{itemize}
-
+\begin{example}
+	$(x_1 \lor x_2) \land (\neg x_1 \lor x_2) \land (x_1 \lor \neg x_2) \land (\neg x_1 \lor \neg x_2)$はUNSATである。
+	変数$x_1,x_2$に真偽値を割当てる方法は合計で$4$つあるが、そのいずれもこの論理式を充足しないことが確認できる。
+\end{example}
 
 
 

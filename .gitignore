@@ -1,0 +1,12 @@
+*.pdf
+*.toc
+*.aux
+*.dvi
+*.log
+*.out
+*.synctex.gz
+
+*.fdb_latexmk
+*.fls
+
+.DS_Store
