@@ -13,8 +13,8 @@
 
 
 
-%\usepackage[dvipdfmx, draft]{graphicx} %図の挿入(下書き)
-\usepackage[dvipdfmx]{graphicx} %図の挿入
+\usepackage[dvipdfmx, draft]{graphicx} %図の挿入(下書き)
+%\usepackage[dvipdfmx]{graphicx} %図の挿入
 \usepackage{ascmac}  % 枠付き文章
 \usepackage{amsmath} % 数式
 \usepackage{comment} % 複数行コメント
@@ -366,6 +366,14 @@ DPLLアルゴリズムは以下のような流れで問題を解いていく
 			\Else
 				\State $\phi$に含まれる変数で未割当な変数$x_i$を探す
 				\State $\theta (x) \gets$ ($x=x_i$なら$\top$、$x \neq x_i$なら$\theta (x)$)
+				\If {DPLL($\phi, \theta$)がSAT}
+					\State $\mathbf{Return}$ SAT
+				\EndIf 
+				\State $\theta (x) \gets$ ($x=x_i$なら$\bot$、$x \neq x_i$なら$\theta (x)$)
+				\If {DPLL($\phi, \theta$)がSAT}
+					\State $\mathbf{Return}$ SAT
+				\EndIf
+				\State $\mathbf{Return}$ UNSAT
 			\EndIf
 		\EndFunction
 	\end{algorithmic}
@@ -777,6 +785,7 @@ changedの値がTrueである場合には縮小前の節を削除するように
 追加した方法は証明を作る際に変更した方法と同じであり、証明を作るオプションの次にstringOption型でオプション名はinterventionとして変数interventionの宣言を行なった。
 これによりオプションで"-intervention=介入ファイル名"を追加することで変数interventionに介入ファイル名を保存できるようになった。
 
+介入の実装の前に今回使用する介入ファイルの
 
 また、後述する遺伝アルゴリズムと組み合わせる際には一度行なった介入を再度行わなければならない可能性がある。
 つまり一度書き換えた各変数のスコアを再現しなければならない。
