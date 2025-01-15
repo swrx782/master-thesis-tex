@@ -385,7 +385,7 @@ DPLLアルゴリズムは以下のような流れで問題を解いていく
 \begin{algorithm}[H]
 	\begin{algorithmic}[1]
 		\Function {UnitPropagation}{$\phi, \theta$}
-			\While {{($\theta(\phi)$が$\bot$でない) かつ ($\phi$の中に単位節$C$が存在)}}
+			\While {{($\theta(\phi)$が$\bot$でない) かつ (割当$\theta$のもとで$\phi$の中に単位節$C$が存在)}}
 				\State $C$の中で未割当な変数$x_i$を探す
 				\State $b \gets$ ($C$が$\top$となるような$x_i$の値$b$)
 				\State $\theta (x) \gets$ ($x=x_i$なら$b$、$x \neq x_i$なら$\theta (x)$)
