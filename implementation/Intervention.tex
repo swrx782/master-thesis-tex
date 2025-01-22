@@ -1,0 +1,174 @@
+\subsection{変数選択への介入}
+
+
+
+% どういうランダム関数を使って書き換えたか
+% 介入ファイルのフォーマット
+% どの順番で変数を書き換えたのか
+
+
+
+% 概要
+準備の部分で述べたように、minisatは各変数にスコアを割り当てており、変数選択を行う際にこのスコアが1番高い変数を選ぶ仕組みになっている。
+この変数のスコアを変更するように介入を行なった。
+minisatの変数選択に介入する際には
+\begin{itemize}
+	\item 介入のタイミング(何回目の変数選択で介入を行うか)
+	\item ランダムで書き換えることを指定する値、または一度行なった介入を再現するためのシード値
+\end{itemize}
+の2つを指定することで変数選択に介入を行えるようにminisatを改造した。
+複数回介入を行う際にはこの2つの値を並べることで複数回の介入を行うことができる。
+2つ目の要素として一度行なった介入を再現できるようにしている理由は、
+後述する遺伝アルゴリズムと組み合わせる際には一度行なった介入を再度行わなければならない可能性があるためである。
+つまり一度書き換えた各変数のスコアを再現しなければならないということである。
+
+% 介入の概要
+まずは介入におけるスコアの書き換え方について説明する。
+この介入はminisatが変数選択を行う前に全ての変数に対してそのスコアを0以上1未満のランダムな値で置き換える。
+この書き換えを行うために2つの関数を定義した。
+
+% 介入における1つ目の関数
+1つ目は主にどの書き換えを行うかを判断する関数rewriteActivityである。
+この関数ではi回目の変数選択における変数の書き換えがどのような書き換えであるかを、
+if文を用いて判断してその指定した書き換えに対応した処理を行う。
+どの書き換えを行うかの識別方法については1番目の介入からn番目の介入までの各介入における書き換え方の情報が格納されている配列のメンバ変数usr\_rewritesをこの識別に使用する。
+この配列は整数型を要素とする配列となっており、各整数に対応してどのような書き換えを行うかを決めている。
+今回は、なにもしない場合、ランダムに置き換える場合、1度行ったランダムな書き換えを再度再現する場合の3種類を定義し、
+それぞれ0,1,2の値を割り当てている。
+メンバ変数next\_interventionには今行おうとしている介入が何番目の介入になっているかを表す整数型の変数であり、
+これと組み合わせることで今行おうとしている書き換えがどのような書き換えであるかを判断することができる。
+それぞれの書き換え方に応じた処理については、何もしない場合は何の処理も行わず、
+他2つについては2つ目で説明する新しい関数randomActivityを呼び出して処理を行う。
+新しくランダムに書き換える場合と1度行った書き換えを再現するかの判断は関数randomActivityの中でも判断している。
+このプログラムは若干冗長なプログラムになっているが、別の書き換えを追加する際に追加しやすいようにこのような形のプログラムにしている。
+今回はランダムな書き換えがメインであり、基本的に書き換えを行わない介入は介入をしないことと同じ意味なので、if文による分岐を行わず関数randomActivityを呼び出すことでも同様の書き換えを行うことができる。
+別の書き換えを行いたい場合はその書き換えに対して0,1,2以外の値を割り当てて、
+その値が格納されていた場合に別の書き換えを行う処理を新しい条件分岐として追加することで実装することができる。
+\begin{lstlisting}[caption=関数randomActivity(core/Solver.cc)]
+	// 指定したモードに応じた関数を呼び出してアクティビティを書き換える
+	void Solver::rewriteActivity() {
+    	// 何もしない場合
+    	if        (usr_rewrites[next_intervention] == 0) {
+		// ランダムに書き換える場合
+    	} else if (usr_rewrites[next_intervention] == 1) {
+    	    randomActivity();
+		// ランダムに書き換える場合(以前行なった書き換えをもう一度再現する)
+    	} else if (usr_rewrites[next_intervention] == 2) {
+    	    randomActivity();
+    	} else {
+    	    cout << "error(rewriteActivity):書き換えのモードが存在しません usr_rewrites[next_intervention] = " << usr_rewrites[next_intervention] << endl;
+    	    exit(1);
+    	}
+	}
+\end{lstlisting}
+
+% 介入における2つ目の関数
+2つ目はランダムに変数のスコアの書き換えを行うrandomActivityである。
+この関数は0番目の変数から順にそのスコア(アクティビティ)を0以上1未満のランダムな値で書き換える。
+ランダムな値を生成する方法として今回はメルセンヌ・ツイスター法による疑似乱数生成機mt19937を使用する。
+各変数のスコアはmt19937とコンストラクタuniform\_real\_distributionを組み合わせて、0以上1未満の範囲で等確率に生成された値になる。
+この各変数のスコアの書き換えを0番目の変数からn番目の変数まで順に行う。
+その後このスコアにおいて一番値が大きい変数が選ばれるように関数rebuildOrderHeap()を呼び出す。
+minisatは変数選択における変数の選び方として、ヒープ構造を使用してスコアが一番大きい変数を選ぶ方法を使っている。
+そのため変数のスコアが変わった際にはヒープ構造を作り直す必要があり、このヒープ構造の作り直しのために関数rebuildOrderHeap()を呼び出している。
+一度行った書き換えを再度行う方法としては、シード値を扱うことでこの方法を再現した。
+各変数のスコアを保存しておいて再度書き換えを行う際にそのスコアを受け取って書き換えることでも再現可能だが、
+変数の数が多い場合に保存するデータ量が莫大なものになってしまうためシード値で扱う方法を使用した。
+各変数のスコアを書き換える前のシード値を保存しておいて、
+実際に書き換えの再現を行う際は書き換えを行う前にそのシード値で現在のシード値が格納されている変数seedを更新する。
+シード値は真の乱数生成を行うことができるrandom\_deviceを使用する。
+真の乱数生成は疑似乱数生成に比べて処理速度が遅いので, 疑似乱数生成器のシード生成するためにだけ使用する
+また、このシード値はファイルdelivery\_data.txtにその時の変数選択数と一緒に保存される。
+\begin{lstlisting}
+	// ランダムにアクティビティを書き換える
+	void Solver::randomActivity() {
+
+    	random_device seed_gen;
+    	unsigned int seed = seed_gen();
+
+		// 書き換えの再現を行う場合はその時のシード値を読み込む
+    	if (usr_rewrites[next_intervention] == 2) {
+    	    seed = usr_seeds[next_intervention];
+    	}
+
+		// 今回の書き換えにおけるシード値を出力
+    	ofstream outputfile("delivery_data.txt", ios::app);
+    	outputfile << decisions << " " << seed << endl;
+    	outputfile.close();
+
+    	// 擬似乱数の生成
+    	mt19937 mt(seed); // メルセンヌ・ツイスタ
+
+    	// 各アクティビティの書き換え
+    	uniform_real_distribution d(0.0, 1.0);
+    	for (int i=0; i<activity.size(); i++) {
+    	    activity[i] = d(mt);
+    	}
+    
+    	// リビルド
+    	rebuildOrderHeap();
+
+	}
+\end{lstlisting}
+
+% タイミングの設定
+介入のタイミングは何回目の変数選択数で介入を行うかで指定できるようにした。
+minisatはメンバ変数decisionsを所持しておりこの変数には現在の変数選択回数が格納されているため、
+このメンバ変数が指定した介入のタイミングと一致した際に介入を行うようにしている。
+また、このメンバ変数は探索を行う関数searchの中で変数選択を行う関数pickBranchLitを呼び出す前に1増加するようになっている。
+
+% 全部を組み合わせる(上2つの関数の場所など)
+上記の2つの関数が指定したタイミングにおいて実行されるように既存の関数に対して変更を行なった。
+この関数は変数選択をおこなう関数pickBranchLitであり、ヒープ構造を利用して
+
+\begin{lstlisting}[caption=関数pickBranchLitの変更による介入の追加(core/Solver.cc), firstnumber=249]
+	Lit Solver::pickBranchLit()
+	{
+    	Var next = var_Undef;
+
+    	// Random decision:
+    	if (drand(random_seed) < random_var_freq && !order_heap.empty()){
+        	next = order_heap[irand(random_seed,order_heap.size())];
+        	if (value(next) == l_Undef && decision[next])
+            	rnd_decisions++; }
+
+    	// Activity based decision:
+    	while (next == var_Undef || value(next) != l_Undef || !decision[next])
+        	if (order_heap.empty()){
+        	    next = var_Undef;
+        	    break;
+        	}else
+            	next = order_heap.removeMin();
+
+    	// Choose polarity based on different polarity modes (global or per-variable):
+    	if (next == var_Undef)
+    	    return lit_Undef;
+    	else if (user_pol[next] != l_Undef)
+    	    return mkLit(next, user_pol[next] == l_True);
+    	else if (rnd_pol)
+    	    return mkLit(next, drand(random_seed) < 0.5);
+    	else
+    	    return mkLit(next, polarity[next]);
+	}
+\end{lstlisting}
+
+
+
+% 介入ファイルのフォーマット
+介入の実装の前に今回使用する介入ファイルの
+
+% ファイルの読み込みによる変数への値格納
+
+% オプションの追加
+まず初めに介入のためのオプションを追加した。
+追加した方法は証明を作る際に変更した方法と同じであり、証明を作るオプションの次にstringOption型でオプション名はinterventionとして変数interventionの宣言を行なった。
+これによりオプションで"-intervention=介入ファイル名"を追加することで変数interventionに介入ファイル名を保存できるようになった。
+
+% 変数選択を行う関数の流れ(どの関数が呼ばれてどういう処理をするか)
+\begin{comment}
+	search()
+	-pickBranchLit()
+	 -rewriteActivity()(新規)
+	  -randomActivity()(新規)
+	   -rebuildOrderHeap()
+\end{comment}
