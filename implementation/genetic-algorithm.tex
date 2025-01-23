@@ -1,0 +1,332 @@
+\subsection{遺伝アルゴリズム}
+
+
+
+ここからは準備で述べた遺伝アルゴリズムを今回の実験においてどのように実装を行うかについて説明する。
+プログラムはpython言語を使用した。
+以下では証明の長さをMiniSatとdrat-trimを使用した際に出力される証明の長さという意味で使用する。
+
+% 染色体
+染色体はタイミングと書き換え方法を表す値を1つの組にしたものを1つの介入として、この介入を並べた介入列を染色体とした。
+書き換え方法を表すためにこの値はどのように書き換えたかを表すシード値が使用される。
+染色体にはその他の情報として、その染色体が表す介入を行なった際におけ証明の長さを所持している。
+この情報は親の選択の際や異なる2つの染色体の優劣の比較に使用される。
+もしこの情報が無い場合、証明の長さを取得しようとする度に時間のかかるMiniSatとdrat-trimを実行しなければならず、大幅な時間がかかってしまう。
+1度計算を行なったらその情報を所持することによって2回目以降の参照の時間を短縮することができる。
+実装においては1つの介入を辞書型の値で表す。
+1つ目のキーはタイミングを表す"timing"で、ここにはタイミングを表す整数型の値が入る。
+2つ目のキーはシード値を表す"seed"で、ここには再現したい介入のために必要なシード値が入る。
+2つ目のシード値についてはMiniSatを実行する前の状態においてはどのような介入かがわからず、シード値は0以上の値であるため、初期値として-1を入れている。
+この介入をリストを利用して並べたものを介入列とする。
+最後に辞書型を利用して介入列を表す値と証明の長さを表す値を持つ値によって染色体を表現する。
+1つ目のキーは介入列を表す"interventions"でその値は各要素が介入列を表す値となるリストであり、
+2つ目のキーは証明の長さを表す"proof\_length"でその値は整数型の値となっている。
+キー"proof\_length"の値は証明の長さを取得する前は初期値-1が入る。
+\begin{flushleft}
+             \{ 'interventions'  : [ \{'timing': タイミング,  'seed': シード値\},\\
+    \phantom{\{ 'interventions'  : [ \{'timing': タイミング,}\vdots\\
+    \phantom{\{ 'interventions'  : [}\{'timing': タイミング,  'seed': シード値\}],\\
+    \phantom{\{}'proof\_length'  : 証明の長さ\}
+\end{flushleft}
+なお介入のタイミングの上限は、介入なしで解かせた時の変数選択数を上限としている。
+
+% 交叉
+交叉については、2つの親に対してある1点を指定してそれ以降を交換する1点交叉を使用した。
+具体的にはタイミングをランダムに指定して、そのタイミング以降の介入列を交換するようにした。
+この処理を行うために1点交叉を行う関数\_crossoverを作成した。
+関数\_crossoverは親となる2つの染色体を受け取って、1点交叉により子となる新しい染色体を2つ作成し返す関数である。
+引数となる親parentsと返り値となる子childrenはどちらも染色体を要素に持つ長さ2のリストになっている。
+子を作成する際には、最初に介入を何も持たない初期化された染色体を2つ作成する。
+次に1つ目の親に対して、交叉位置となるタイミング以上での介入は2つ目の染色体の介入リストに加え、
+それより前のでの介入は1つ目の染色体に加える。
+2つ目の親に対してはその逆の操作を行う。
+この状態においては子の染色体における各介入のタイミングが順番になるようになっていない可能性があるので、
+sort関数を使用して子の介入の順番を整理する。
+交叉位置については関数random.randintを使用してランダムな値を取得する。
+下限は2つの親の最初のタイミングの小さい方に1足したものとして設定し、上限は2つの親の最後のタイミングの大きい方で設定した
+長さが2以外の染色体のリストが引数として渡された場合はエラーメッセージを出力してプログラムを終了する。
+\begin{lstlisting}[caption=1点交叉を行う関数\_crossover]
+    # 一点交叉
+    def _crossover(parents):
+
+        # 親の数があっているか確認
+        if len(parents) != 2:
+            print(f"error(_crossover(parents)):", file=stderr)
+            print(f" 親の数が不適切です。(2であるはずが{len(parents)}です)",file=stderr)
+            exit(1)
+
+        # 交叉位置の下限の設定
+        lower_lim_timing = min(parents[0]["interventions"][ 0]["timing"],
+                               parents[1]["interventions"][ 0]["timing"]) + 1
+        
+        # 交叉位置の上限の設定
+        upper_lim_timing = max(parents[0]["interventions"][-1]["timing"],
+                               parents[1]["interventions"][-1]["timing"])
+
+        # 交叉位置の設定
+        crossover_pos = random.randint(lower_lim_timing, upper_lim_timing)
+
+        # 交叉位置の前後で介入情報を交換する
+        children = [{'interventions'  : [],
+                    'proof_length'    : -1},
+                    {'interventions'  : [],
+                    'proof_length'    : -1} ]
+        for i in range(len(parents[0]["interventions"])):
+            j = int(crossover_pos <= parents[0]["interventions"][i]["timing"])
+            children[j]["interventions"].append(parents[0]["interventions"][i])
+        for i in range(len(parents[1]["interventions"])):
+            j = int(parents[1]["interventions"][i]["timing"] < crossover_pos)
+            children[j]["interventions"].append(parents[1]["interventions"][i])
+
+        # それぞれの子の介入情報を整理する
+        children[0]["interventions"] = list(sorted(children[0]["interventions"],
+                                                   key=lambda x: x["timing"]))
+        children[1]["interventions"] = list(sorted(children[1]["interventions"],
+                                                   key=lambda x: x["timing"]))
+
+        return children, crossover_pos
+\end{lstlisting}
+
+% 突然変異
+突然変異については、新しい介入を1つ追加する突然変異と今ある介入の中から1つ削除する突然変異の2つを採用した。
+突然変異は交叉を行なった後に10\%の確率で行われ、行う場合は追加の突然変異もしくは削除の突然変異のどちらかを等確率で選ぶ。
+
+% 追加の突然変異
+追加の突然変異は1つの染色体に対して新しい介入を1つ追加し新しい染色体を作成する。
+同一のタイミングでの介入は今回のminisatにおける介入には対応していないため、
+この時新しい介入のタイミングは染色体が持っている介入のタイミングと被らないようにしている。
+また、今回介入のタイミングは介入なしで解かせた際の変数選択数を上限としているため、
+介入数が介入なしの場合の変数選択数と一致して追加できなくなった場合は追加せず終了する。
+追加の突然変異は関数\_add\_interventionによって作成した。
+この関数は長さ1の染色体のリストを受け取りその染色体の介入列に新しい染色体を追加する。
+受け取った染色体自体に介入を追加しているため、もとの染色体は無くなり新しい染色体のみが残る。
+介入を追加する際にはあらかじめこれ以上追加できないかどうかを現在の介入数と介入なしの場合の変数選択数をを比較することによって確認を行い、
+追加できる場合は現在の介入のタイミングとは被らないタイミングを関数random.randintを使って探す。
+そして新しい介入におけるシード値を関数random.randint(0, 4294967295)によって決定し、
+これを取得した新しいタイミングと合わせて介入としてリストの最後尾に追加する。
+最後に追加した介入が正しい位置になるように介入列をソートする。
+介入の回数は変数add\_nによって管理されておりこの変数の回数だけfor文を使って追加の処理を行なっているため、
+この変数の値を変更することで追加する介入の回数を変更できる。
+現在の各介入におけるタイミングは集合timingsを使って管理する。
+\begin{lstlisting}[caption=追加の突然変異を行う関数\_add\_intervention]
+    # 突然変異(介入の追加)
+    def _add_intervention(parents):
+
+        # 親の数があっているか確認
+        if len(parents) != 1:
+            print(f"error(_add_intervention(parents)):", file=stderr)
+            print(f" 親の数が不適切です。(2であるはずが{len(parents)}です)",file=stderr)
+            exit(1)
+
+        # 現在の介入位置の取得
+        timings = set([itv["timing"] for itv in parents[0]["interventions"]])
+        if len(timings) != len([itv["timing"] for itv in parents[0]["interventions"]]):
+            print("error(_add_intervention(parents)):", file=stderr)
+            print(" 介入列のタイミングが重複している可能性があります。", file=stderr)
+            print(" parents=", file=stderr)
+            pprint(parents, stream=stderr)
+            exit(1)
+
+        # シード値の設定
+        random.seed() # 他でシード値を使う可能性があるので一旦初期化
+        seed = random.random()
+        random.seed(seed)
+
+        # 指定された数だけ介入を追加する
+        add_n = 1
+        children = parents
+        for _ in range(add_n):
+
+            # これ以上追加できない場合は追加終了
+            if len(timings) == decisions: break
+
+            # 新しい介入位置の取得
+            new_timing = random.randint(1, decisions)
+            while new_timing in timings:
+                new_timing = random.randint(1, decisions)
+
+            # 介入の追加
+            timings.add(new_timing)
+            children[0]["interventions"].append({"seed": random.randint(0, 4294967295),
+                                                 "timing": new_timing})
+            
+        # 染色体の情報の整理
+        children[0]["interventions"] = list(sorted(children[0]["interventions"],
+                                                   key= lambda x: x["timing"]))
+        children[0]["proof_length"    ] = -1
+
+        return seed, add_n
+\end{lstlisting}
+
+% 削除の突然変異
+削除の突然変異は1つの染色体に対してその中の介入を1つ削除し新しい染色体を作成する。
+介入の数が0になった場合は何も行わずに終了する。
+削除の突然変異を行う関数\_del\_interventionはほとんどの流れは\_add\_interventionと同じであるが、
+異なる点として、削除を行う際には介入のインデックスをランダムに取得し介入が順番になっていることを保ったままそのインデックスにおける介入を削除する。
+\begin{lstlisting}[caption=削除の突然変異を行う関数\_del\_intervention]
+    # 突然変異(介入の削除)
+    def _del_intervention(parents):
+
+        # 親の数があっているか確認(必要なら関数定義しておく)
+        if len(parents) != 1:
+            print(f"error(_del_intervention(parents)):", file=stderr)
+            print(f" 親の数が不適切です。(2であるはずが{len(parents)}です)",file=stderr)
+            exit(1)
+
+        # シード値の設定
+        random.seed() # 他でシード値を使う可能性があるので一旦初期化
+        seed = random.random()
+        random.seed(seed)        
+
+        # 指定された数だけ介入を削除する
+        del_n = 1
+        children = parents
+        for _ in range(del_n):
+
+            # これ以上削除できない場合は削除終了
+            if len(children[0]["interventions"]) <= 0: break
+
+            # 削除するタイミングのインデックスを取得
+            del_index = random.choice(range(len(children[0]["interventions"])))
+            children[0]["interventions"].pop(del_index)
+
+        children[0]["proof_length"    ] = -1
+
+        return seed, del_n
+\end{lstlisting}
+
+% 評価関数
+評価関数については染色体が持つ介入のもとでminisatを実行してからdrat-trimを実行した後にできる証明の長さを返す関数とした。
+実装した評価関数evaluateは染色体population\_iを受け取ってminisatとdrat-trimを実行し、
+できた証明の長さを受け取った染色体に加えてから受け取った染色体を返す関数である。
+染色体の中に1度も行われていない介入がある場合は、その介入のシード値を介入を行なった際に設定したシード値で変更する。
+minisatとdrat-trimの実行は関数subprocess.runを使用して実行した。
+minisatの実行をする前では染色体の介入の情報を介入ファイルに書き込み、
+minisatの実行が終わった後では染色体が持つ介入のシード値を更新する。
+ここではminisatが作成した介入のタイミングとそのシード値が書き込まれている受け渡しデータファイル"delivery\_data.txt"を読み取って、
+初めて介入を行なった介入のシード値を更新する。
+この時すでに介入を行なっている介入に対しては実際に行われた介入のシード値と染色体が持つ介入のシード値が一致しているかどうかチェックする。
+実行の中で扱われる4つのファイルは実行前には存在していないことを想定しており、関数の最初にファイルの作成を行い、関数の処理が全て終了した後に全てのファイルを削除する。
+また、介入ファイルとdrat-trim前後の証明ファイルはファイル名を変更した場合、minisatやdrat-trimの実行の際に扱うファイル名も一緒に変更されるので処理に問題はないが、
+受け渡しデータファイルに関してはminisatが"delivery\_data.txt"という名前で固定してファイルを作成しているため、変更した場合処理に問題が起きる可能性がある。
+\begin{lstlisting}
+    # 評価関数
+    def evaluate(population_i):
+
+        # ファイルが存在しないかを確認(存在したらエラー)
+        def _file_exits_check(file):
+            if os.path.isfile(file):
+                print(f"error(evaluate(population_i)): 既にファイル{file}が存在します。削除してください。",
+                    file=sys.stderr)
+                exit(1)
+
+        # 必要な新規ファイルの存在確認と作成
+        intervention_file  = WORKING_DIR + "intervention.txt"   # 介入ファイル
+        delivery_data_file = WORKING_DIR + "delivery_data.txt"  # 受け渡しデータファイル
+        bef_proof_file     = WORKING_DIR + "bef-proof.drat"     # drat-trim前の証明ファイル
+        aft_proof_file     = WORKING_DIR + "aft-proof.drat"     # drat-trim後の証明ファイル
+        new_files = [intervention_file,
+                     delivery_data_file,
+                     bef_proof_file,
+                     aft_proof_file     ]
+        for file in new_files:
+            _file_exits_check(file)
+            open(file, "w")
+    
+        # 介入ファイルの作成と介入情報の入力
+        with open(intervention_file, "w") as f:
+            n_of_interventions = len(population_i['interventions']) # 介入の回数
+            f.write(f"i {n_of_interventions}\n")
+            for i in range(n_of_interventions):
+                interventions_i = population_i['interventions'][i]  # i回目の介入情報
+                f.write(f"t {interventions_i['timing']}\n")
+                seed = interventions_i["seed"]                      # i回目のシード値
+                if seed == -1:
+                    f.write( "a Random\n")
+                else:
+                    f.write(f"a Random_reproduction {seed}\n")
+    
+        # minisatを実行
+        command = [MINISAT, unzip_bench_file,
+                   f"-proof={bef_proof_file}", f"-intervention={intervention_file}"]
+        execution_result = subprocess.run(command, capture_output=True, text=True)
+        if execution_result.returncode != 20:
+            print( "error(evaluate(population_i)): ",file=sys.stderr)
+            print(f"予期せぬ返り値です: {execution_result.returncode}", file=sys.stderr)
+            print(f"問題ファイル名: {unzip_bench_file}", file=sys.stderr)
+            print(f"実行結果: ", file=sys.stderr)
+            # エラーの情報を得るために実行を全て取得する
+            print("arges=")
+            pprint(execution_result.args)
+            print("returncode=")
+            pprint(execution_result.returncode)
+            print("stdout=")
+            pprint(execution_result.stdout)
+            print("stderr=")
+            pprint(execution_result.stderr)
+            exit(1)
+       
+        # 各seed値を挿入する(挿入が必要ない場合は確認を行う)
+        i = 0
+        f = open(delivery_data_file)
+        str = f.readline()
+        while str:
+            data = list(map(int, str.split()))
+            if len(data) != 2:
+                print(f"error(evaluate(population_i)): {delivery_data_file}の書式が適切ではありません", file=sys.stderr)
+                print(f"data: {data}", file=sys.stderr)
+                exit(1)
+            else: timing, seed = data
+            if population_i["interventions"][i]["timing"] != timing:
+                print(f"error(evaluate(population_i)): {i+1}回目のタイミングが一致しません", file=sys.stderr)
+                print(f"染色体側のタイミング　　: {population_i['interventions'][i]['timing']}", file=sys.stderr)
+                print(f"実際に介入したタイミング: {timing}", file=sys.stderr)
+                exit(1)
+            if population_i["interventions"][i]["seed"] == -1:
+                population_i["interventions"][i]["seed"] = seed
+            else:
+                if population_i["interventions"][i]["seed"] != seed:
+                    print(f"error(evaluate(population_i)): {i+1}回目のシード値が一致しません", file=sys.stderr)
+                    print(f"染色体側のシード値　　　　: {population_i['interventions'][i]['seed']}", file=sys.stderr)
+                    print(f"実際に介入した際のシード値: {seed}", file=sys.stderr)
+                    exit(1)
+            i += 1
+            str = f.readline()
+        f.close()
+
+        # drat-trimを実行
+        command = [MINISAT, unzip_bench_file,
+                   f"-proof={bef_proof_file}", f"-intervention={intervention_file}"]
+        command = [DRATTRIM, unzip_bench_file, bef_proof_file, "-l", aft_proof_file,]
+        execution_result = subprocess.run(command, capture_output=True, text=True)
+
+        # 評価後の証明の長さを更新する
+        with open(aft_proof_file) as f:
+            population_i["proof_length"] = sum(c[0] != "d" for c in f.readlines())
+
+        # 作成した新規ファイルの削除
+        for file in new_files: os.remove(file)
+
+        return population_i
+\end{lstlisting}
+
+
+
+% 親の取り方
+その他細かい部分として新しい子を生成する際の親の選択方法としては、各染色体の評価値の逆数を重みとしてランダムに選択している。
+つまり短い証明を作成するような染色体ほど親として選ばれやすいようになっている。
+また新しい世代の作り方としては既存の集団の一部分を削除して空いた部分に新しく生成した子を入れて作るのではなく、
+既存の集団を全て削除して新しく生成した子で全て入れ替えるようにしている。
+
+% プログラムの枠組み
+これらの設定ののもとで遺伝アルゴリズムの実装を行なった。
+
+% パラメータの設定について
+
+% ファイルの圧縮
+実装における細かい部分としては、遺伝アルゴリズムの実行後の結果ファイルの作成時に調整を行なった。
+遺伝アルゴリズム実行後のデータとして、各世代各染色体の証明の長さをリストにしたデータと各世代各染色体の介入列などの全情報も含めたデータを作成しているが、
+後者のデータに関しては染色体の介入列の長さが大きくなった際に全体のデータ量が大きくなってしまう問題がある。
+この問題を解消するために各世代各染色体の情報をデータに収めるのではなく、その染色体を作るためにどのような交叉をしたかやどのような突然変異をしたかなどの復元のための情報をデータに収めるようにした。
+復元の際に時間がかかるものの、全染色体の介入列の情報など全ての情報を復元によって手に入れることができる。
+加えて交叉や突然変異の方法が大きく変わらない(復元のための情報が大きくならない)限り、染色体の介入数がどれだけ大きくなっても一定サイズのデータで出力することができる。
