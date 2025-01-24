@@ -13,7 +13,7 @@
 
 
 
-\usepackage[dvipdfmx, draft]{graphicx} %図の挿入(下書き)
+
 \usepackage[dvipdfmx]{graphicx} %図の挿入
 \usepackage{ascmac}  % 枠付き文章
 \usepackage{amsmath} % 数式
@@ -29,7 +29,7 @@
 % プログラムのソースコード
 \usepackage{listings} % ソースコードを書けるようにする
 \usepackage{jvlisting} % 日本語が文字化けしないようにする
-\usepackage{jlisting}  % pythonにおいて日本語の位置が変わないようにする
+\usepackage{jlisting}  % pythonにおいて日本語の位置が変わらないようにする
 \lstset{ %↓ここはソースコードの書式設定
   basicstyle={\ttfamily},
   identifierstyle={\normalsize},
@@ -669,6 +669,7 @@ SATソルバーの1つであり、今回証明を作成するのに使用して�
 
 
 
+
 % 実装
 \input{implementation/implementation.tex}
 
@@ -676,18 +677,12 @@ SATソルバーの1つであり、今回証明を作成するのに使用して�
 
 
 
-\section{問い}
 
 
 
 
 
-
-
-
-
-
-\section{実験}
+\input{experiment.tex}
 
 
 
@@ -709,7 +704,8 @@ SATソルバーの1つであり、今回証明を作成するのに使用して�
 
 
 
-\section{考察}
+\section{今後の課題}
+
 
 
 

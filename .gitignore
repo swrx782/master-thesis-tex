@@ -9,4 +9,6 @@
 *.fdb_latexmk
 *.fls
 
+*.pptx # 画像作成用
+
 .DS_Store
