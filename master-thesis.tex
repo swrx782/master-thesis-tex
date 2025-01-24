@@ -53,7 +53,16 @@
 \renewcommand{\lstlistingname}{ソースコード}
 
 
+\newif\ifdraft
+\drafttrue
+% \draftfalse
 
+\usepackage{color}
+\ifdraft
+\newcommand{\todo}[1]{{\bf \color{red}{[{#1}]}}}
+\else
+\newcommand{\todo}[1]{}
+\fi
 
 
 % タイトル
