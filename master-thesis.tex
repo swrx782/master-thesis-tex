@@ -105,7 +105,6 @@
 	実験の結果として、次のような観察を得た。
 	特定のタイミングで変数選択を変更してもあまり短い証明が得られないこと、遺伝アルゴリズムを MiniSat に使用することで使用する前の MiniSat よりも短い証明を作れることがわかった。
 	しかし、問題によっては現在の高速な SAT solver である Kissat が作る証明よりも短い証明は作れていない場合もあり、短い証明ができても Kissat が作る証明の100倍短くなるような大幅に短い証明はできていない。
-	また、解くのに時間がかかるような問題ほど、より短い証明を作りやすい傾向にある。
 \end{abstract}
 
 
@@ -123,14 +122,7 @@
 
 
 
-\section{導入}
-
-\begin{comment}
-\begin{figure}[t]
- 	\includegraphics[width=5cm]{figures/apple.png}
-	\caption{りんごの写真}
-\end{figure}
-\end{comment}
+\input{introduction.tex}
 
 
 
@@ -557,7 +549,7 @@ $i \in \{0,1,...,|P|\}$に対して$F_{P}^{i}$を次のように定義する。
 		\end{itemize}
 \end{description}
 
-実際に検証するツールとしてdrat-trimが存在する。
+実際に検証するツールとしてdrat-trim\todo{drat-trim}が存在する。
 このツールのもう1つの特徴として元の証明を短くすることができる。
 検証を行う際にもとの証明の中で使用されなかった節を削除する方法で元の証明よりも短い証明を出力している。
 
@@ -694,7 +686,7 @@ SATソルバーの1つであり、今回証明を作成するのに使用して�
 
 
 
-
+% 実験
 \input{experiment.tex}
 
 
@@ -718,6 +710,7 @@ SATソルバーの1つであり、今回証明を作成するのに使用して�
 
 
 \section{今後の課題}
+\label{sec:今後の課題}
 
 ・遺伝アルゴリズムの変更
 
@@ -754,6 +747,19 @@ SATソルバーの1つであり、今回証明を作成するのに使用して�
 
 
 \section{まとめ}
+
+
+
+
+
+
+
+
+
+
+% 参考文献
+\bibliographystyle{jabbrv} %日本語の場合は jabbrv などとする
+\bibliography{references}
 
 
 
