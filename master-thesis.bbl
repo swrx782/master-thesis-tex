@@ -1,3 +1,81 @@
-\begin{thebibliography}{}
+\begin{thebibliography}{10}
+
+\bibitem{glucose}
+G.~Audemard and L.~Simon.
+\newblock Predicting learnt clauses quality in modern sat solver.
+\newblock {\em IJCAI-09}, pp. 399--404, 2009.
+
+\bibitem{Cook}
+S.~A. Cook.
+\newblock The complexity of theorem-proving procedures.
+\newblock {\em STOC '71: Proceedings of the third annual ACM symposium on
+  Theory of computing}, pp. 151--158, 1971.
+
+\bibitem{DPLL}
+M.~Davis, G.~Logemann, , and D.~Loveland.
+\newblock A machine program for theorem proving.
+\newblock {\em A Machine Program for Theorem Proving}, 5(7), 1962.
+
+\bibitem{BerkMin}
+E.~Goldberg and Y.~Novikov.
+\newblock Berkmin: A fast and robust sat-solver.
+\newblock {\em Discrete Applied Mathematics}, 155(12):1549--1561, 2007.
+
+\bibitem{pigeonhole}
+I.~Grosof, N.~Zhang, and M.~J.~H. Heule.
+\newblock Toward the shortest drat proof of the pigeonhole principle.
+\newblock {\em Pragmatics of SAT}, 2022.
+
+\bibitem{kissat}
+M.~Heule, M.~Iser, M.~J^^c3^^a4rvisalo, and M.~Suda.
+\newblock Cadical, gimsatul, isasat and kissat entering the sat competition
+  2024.
+\newblock {\em Department of Computer Science Report Series B}, B-2024-1:8--11,
+  2024.
+
+\bibitem{GA}
+L.デービス編.
+\newblock 遺伝的アルゴリズムハンドブック.
+\newblock 1994.
+
+\bibitem{CDCL}
+J.~c.~P. Marques-Silva and K.~A. Sakallah.
+\newblock Grasp: A search algorithm for propositional satisfiability.
+\newblock {\em IEEE Transactions on Computers}, 48(5), 1999.
+
+\bibitem{Chaff}
+M.~W. Moskewicz, C.~F. Madigan, Y.~Zhao, L.~Zhang, and S.~Malik.
+\newblock Chaff: engineering an efficient sat solver.
+\newblock {\em Proceedings of the 38th Design Automation Conference}, pp.
+  530--535, 2001.
+
+\bibitem{MINISAT}
+N.E{\'e}n and N.S{\"o}rensson.
+\newblock An extemsible sat-solver.
+\newblock {\em Internationnal conference on theory and applications of
+  satisfiability testing}, pp. 502--518, 2003.
+
+\bibitem{proof}
+R.~A. Reckhow.
+\newblock {\em On the Lengths of Proofs in the Propo- sitional Calculus}.
+\newblock PhD thesis, University of Toronto, 1975.
+
+\bibitem{neuralnet-vs-random-VSIDS}
+D.~Selsam and N.~Bj{\o}rner.
+\newblock Guiding high-performance sat solvers with unsat-core predictions.
+\newblock {\em International Conference on Theory and Applications of
+  Satisfiability Testing}, 2019.
+
+\bibitem{DRAT}
+N.~Wetzler, M.~J. Heule, and W.~A. Hunt.
+\newblock Drat-trim: Efficient checking and trimming using expressive clausal
+  proofs.
+\newblock {\em International Conference on Theory and Applications of
+  Satisfiability Testing}, 2014.
+
+\bibitem{PracticalExample}
+町出, 薗部.
+\newblock Satソルバを参考にした行列のフルランク性の判定手法.
+\newblock 人工知能学会全国大会論文集, 2018.
 
 \end{thebibliography}
